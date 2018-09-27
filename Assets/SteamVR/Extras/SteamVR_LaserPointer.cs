@@ -30,6 +30,8 @@ public class SteamVR_LaserPointer : MonoBehaviour
 
     Transform previousContact = null;
 
+    public bool disable = false;
+
 	// Use this for initialization
 	void Start ()
     {
@@ -88,62 +90,64 @@ public class SteamVR_LaserPointer : MonoBehaviour
             this.transform.GetChild(0).gameObject.SetActive(true);
         }
 
-        float dist = 100f;
-
-        SteamVR_TrackedController controller = GetComponent<SteamVR_TrackedController>();
-
-        print(transform.forward);
-        Ray raycast = new Ray(transform.position, transform.forward);
-        RaycastHit hit;
-        bool bHit = Physics.Raycast(raycast, out hit);
-
-        if(previousContact && previousContact != hit.transform)
+        if (!disable)
         {
-            PointerEventArgs args = new PointerEventArgs();
-            if (controller != null)
+            float dist = 100f;
+
+            SteamVR_TrackedController controller = GetComponent<SteamVR_TrackedController>();
+
+            Ray raycast = new Ray(transform.position, transform.forward);
+            RaycastHit hit;
+            bool bHit = Physics.Raycast(raycast, out hit);
+
+            if (previousContact && previousContact != hit.transform)
             {
-                args.controllerIndex = controller.controllerIndex;
+                PointerEventArgs args = new PointerEventArgs();
+                if (controller != null)
+                {
+                    args.controllerIndex = controller.controllerIndex;
+                }
+                args.distance = 0f;
+                args.flags = 0;
+                args.target = previousContact;
+                OnPointerOut(args);
+                pointer.SetActive(false);
+                gameLogic.GetComponent<GameLogic>().disable = false;
+                previousContact = null;
             }
-            args.distance = 0f;
-            args.flags = 0;
-            args.target = previousContact;
-            OnPointerOut(args);
-            pointer.SetActive(false);
-            gameLogic.GetComponent<GameLogic>().disable = false;
-            previousContact = null;
-        }
-        if(bHit && previousContact != hit.transform)
-        {
-            PointerEventArgs argsIn = new PointerEventArgs();
-            if (controller != null)
+            if (bHit && previousContact != hit.transform)
             {
-                argsIn.controllerIndex = controller.controllerIndex;
+                PointerEventArgs argsIn = new PointerEventArgs();
+                if (controller != null)
+                {
+                    argsIn.controllerIndex = controller.controllerIndex;
+                }
+                argsIn.distance = hit.distance;
+                argsIn.flags = 0;
+                argsIn.target = hit.transform;
+                OnPointerIn(argsIn);
+                pointer.SetActive(true);
+                gameLogic.GetComponent<GameLogic>().disable = true;
+                previousContact = hit.transform;
             }
-            argsIn.distance = hit.distance;
-            argsIn.flags = 0;
-            argsIn.target = hit.transform;
-            OnPointerIn(argsIn);
-            pointer.SetActive(true);
-            gameLogic.GetComponent<GameLogic>().disable = true;
-            previousContact = hit.transform;
-        }
-        if(!bHit)
-        {
-            previousContact = null;
-        }
-        if (bHit && hit.distance < 100f)
-        {
-            dist = hit.distance;
-        }
+            if (!bHit)
+            {
+                previousContact = null;
+            }
+            if (bHit && hit.distance < 100f)
+            {
+                dist = hit.distance;
+            }
 
-        if (controller != null && controller.triggerPressed)
-        {
-            pointer.transform.localScale = new Vector3(thickness * 5f, thickness * 5f, dist);
+            if (controller != null && controller.triggerPressed)
+            {
+                pointer.transform.localScale = new Vector3(thickness * 5f, thickness * 5f, dist);
+            }
+            else
+            {
+                pointer.transform.localScale = new Vector3(thickness, thickness, dist);
+            }
+            pointer.transform.localPosition = new Vector3(0f, 0f, dist / 2f);
         }
-        else
-        {
-            pointer.transform.localScale = new Vector3(thickness, thickness, dist);
-        }
-        pointer.transform.localPosition = new Vector3(0f, 0f, dist/2f);
     }
 }
